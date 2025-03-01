@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Users table
+model User {
+  user_id   Int      @id @default(autoincrement())
+  fullname  String   @db.VarChar(50)
+  email     String   @unique @db.VarChar(100)
+  password  String   @db.VarChar(255)
+  phone     String   @db.VarChar(15)
+  city      String   @db.VarChar(50)
+  country   String   @db.VarChar(50)
+  birthdate DateTime
+  role      Role     @default(user)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  reviews   Review[]
+  cartItems Cart[]
+  wishlist  Wishlist[]
+}
+
+enum Role {
+  user
+  admin
+}
+
+// Categories table
+model Category {
+  category_id   Int      @id @default(autoincrement())
+  category_name String   @unique @db.VarChar(100)
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  products Product[]
+}
+
+// Products table
+model Product {
+  product_id     Int      @id @default(autoincrement())
+  product_name   String   @db.VarChar(150)
+  description    String
+  price          Decimal  @db.Decimal(10, 2)
+  discount       Decimal? @db.Decimal(10, 2)
+  stock_quantity Int
+  imagePath      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  category_id  Int
+  category     Category      @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  reviews      Review[]
+  cartItems    Cart[]
+  orderDetails OrderDetail[]
+  sales        Sale[]
+  wishlist     Wishlist[]
+}
+
+// Sales table
+model Sale {
+  id         BigInt   @id @default(autoincrement())
+  product_id Int
+  quantity   Int
+  totalPrice Decimal  @db.Decimal(10, 2)
+  saleDate   DateTime @default(now())
+
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+}
+
+// Orders table
+model Order {
+  order_id    Int         @id @default(autoincrement())
+  user_id     Int
+  orderStatus OrderStatus @default(Pending)
+  totalPrice  Decimal     @db.Decimal(10, 2)
+  orderDate   DateTime    @default(now())
+
+  user         User          @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  orderDetails OrderDetail[]
+  payments     Payment[]
+}
+
+enum OrderStatus {
+  Pending
+  Processing
+  Shipped
+  Delivered
+  Cancelled
+}
+
+// OrderDetails table
+model OrderDetail {
+  order_detail_id Int     @id @default(autoincrement())
+  order_id        Int
+  product_id      Int
+  quantity        Int
+  price           Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+}
+
+// Cart table
+model Cart {
+  cart_id    Int      @id @default(autoincrement())
+  user_id    Int
+  product_id Int
+  quantity   Int
+  addedAt    DateTime @default(now())
+
+  user    User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+}
+
+// Payments table
+model Payment {
+  payment_id    Int           @id @default(autoincrement())
+  order_id      Int
+  paymentMethod PaymentMethod @default(CreditCard)
+  paymentStatus PaymentStatus @default(Pending)
+  paymentDate   DateTime      @default(now())
+
+  order Order @relation(fields: [order_id], references: [order_id], onDelete: Cascade)
+}
+
+enum PaymentMethod {
+  CreditCard
+  DebitCard
+  PayPal
+  CashOnDelivery
+}
+
+enum PaymentStatus {
+  Pending
+  Completed
+  Failed
+}
+
+// Reviews table
+model Review {
+  review_id   Int      @id @default(autoincrement())
+  product_id  Int
+  user_id     Int
+  rating      Int      // Validation will be handled in the application
+  reviewText  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product     Product  @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+
+// Wishlist table
+model Wishlist {
+  wishlist_id Int      @id @default(autoincrement())
+  user_id     Int
+  product_id  Int
+  addedAt     DateTime @default(now())
+
+  user    User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+}
